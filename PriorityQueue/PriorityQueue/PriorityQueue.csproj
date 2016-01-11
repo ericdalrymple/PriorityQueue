@@ -46,7 +46,6 @@
     <Compile Include="BinomialHeap.cs" />
     <Compile Include="BinomialTree.cs" />
     <Compile Include="CircularLinkedList.cs" />
-    <Compile Include="HeapMode.cs" />
     <Compile Include="PriorityQueue.cs" />
     <Compile Include="PriorityQueueTester.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

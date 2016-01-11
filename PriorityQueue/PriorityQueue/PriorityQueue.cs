@@ -1,8 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Runtime.CompilerServices;
 
 /// <summary>
 /// An implementation of a priority queue deliberately made from scratch.
@@ -21,18 +18,22 @@ class PriorityQueue<T>
     /// Tuple node that can be compared to other nodes of its kind according to priority.
     /// </summary>
     /// <typeparam name="S"></typeparam>
-    private class PriorityQueueTuple<S>
-    : IComparable<PriorityQueueTuple<S>>
+    public class PriorityQueueTuple
+    : IComparable<PriorityQueueTuple>
     {
-        public T value { get { return m_Value; } }
-        public int priority { get { return m_Priority; } }
-        public PriorityQueueTuple<T> counterpart { get { return m_Counterpart; } set { m_Counterpart = value; } }
+        public T Value { get { return m_Value; } }
+        public int Priority { get { return m_Priority; } }
 
         private T m_Value;
         private int m_Priority = -1;
         private SortMode m_SortMode;
-        private PriorityQueueTuple<T> m_Counterpart;
 
+        /// <summary>
+        /// Instantiate a new priority queue tuple.
+        /// </summary>
+        /// <param name="mode"></param>
+        /// <param name="value"></param>
+        /// <param name="priority"></param>
         public PriorityQueueTuple( SortMode mode, T value, int priority )
         {
             m_Value = value;
@@ -40,7 +41,12 @@ class PriorityQueue<T>
             m_SortMode = mode;
         }
 
-        public int CompareTo( PriorityQueueTuple<S> other )
+        /// <summary>
+        /// Compares one tuple against another according to its sort mode.
+        /// </summary>
+        /// <param name="other"></param>
+        /// <returns></returns>
+        public int CompareTo( PriorityQueueTuple other )
         {
             if( SortMode.DESCENDING == m_SortMode )
             {
@@ -49,45 +55,68 @@ class PriorityQueue<T>
 
             return m_Priority - other.m_Priority;
         }
+
+        /// <summary>
+        /// Returns a display string for this tuple.
+        /// </summary>
+        /// <returns>A display string.</returns>
+        public override string ToString()
+        {
+            return "(" + m_Value.ToString() + ", " + m_Priority + ")";
+        }
     }
-    
-    public T min
+
+    public T Max
     {
         get
         {
-            PriorityQueueTuple<T> result = m_MinHeap.Peek();
+            PriorityQueueTuple result = m_MaxHeap.Peek();
             if( null != result )
             {
-                return result.value;
+                return result.Value;
             }
 
             return default( T );
         }
     }
 
-    private BinomialHeap<PriorityQueueTuple<T>> m_MinHeap = null;
-    private BinomialHeap<PriorityQueueTuple<T>> m_MaxHeap = null;
-
-    public PriorityQueue()
+    public T Min
     {
+        get
+        {
+            PriorityQueueTuple result = m_MinHeap.Peek();
+            if( null != result )
+            {
+                return result.Value;
+            }
 
+            return default( T );
+        }
     }
 
+    private BinomialHeap<PriorityQueueTuple> m_MinHeap = null;
+    private BinomialHeap<PriorityQueueTuple> m_MaxHeap = null;
+
+    /// <summary>
+    /// Adds a value with a specified priority to the priority queue.
+    /// </summary>
+    /// <remarks>
+    /// Complexity: O(log n)
+    /// </remarks>
+    /// <param name="value">Value to be added.</param>
+    /// <param name="priority">Priority of the specified value.</param>
     public void Enqueue( T value, int priority )
     {
-        //-- Create our tuple
-        PriorityQueueTuple<T> newMinEntry = new PriorityQueueTuple<T>( SortMode.ASCENDING, value, priority );
-        PriorityQueueTuple<T> newMaxEntry = new PriorityQueueTuple<T>( SortMode.DESCENDING, value, priority );
-
-        //-- Link them so we can access them from each other
-        newMinEntry.counterpart = newMaxEntry;
-        newMaxEntry.counterpart = newMinEntry;
+        //-- Create our tuples
+        PriorityQueueTuple newMinEntry = new PriorityQueueTuple( SortMode.ASCENDING, value, priority );
+        PriorityQueueTuple newMaxEntry = new PriorityQueueTuple( SortMode.DESCENDING, value, priority );
 
         //-- Add to the min heap
-        BinomialHeap<PriorityQueueTuple<T>> newMinHeap = new BinomialHeap<PriorityQueueTuple<T>>( newMinEntry );
+        BinomialHeap<PriorityQueueTuple> newMinHeap = new BinomialHeap<PriorityQueueTuple>( newMinEntry );
+        BinomialTreeNode<PriorityQueueTuple> newMinNode = newMinHeap.PeekNode();
         if( null != m_MinHeap )
         {
-            m_MinHeap = BinomialHeap<PriorityQueueTuple<T>>.Merge( m_MinHeap, newMinHeap );
+            m_MinHeap.Union( newMinHeap );
         }
         else
         {
@@ -95,24 +124,56 @@ class PriorityQueue<T>
         }
 
         //-- Add to the max heap
-        BinomialHeap<PriorityQueueTuple<T>> newMaxHeap = new BinomialHeap<PriorityQueueTuple<T>>( newMaxEntry );
+        BinomialHeap<PriorityQueueTuple> newMaxHeap = new BinomialHeap<PriorityQueueTuple>( newMaxEntry );
+        BinomialTreeNode<PriorityQueueTuple> newMaxNode = newMinHeap.PeekNode();
         if( null != m_MaxHeap )
         {
-            m_MaxHeap = BinomialHeap<PriorityQueueTuple<T>>.Merge( m_MaxHeap, newMaxHeap );
+            m_MaxHeap.Union( newMaxHeap );
         }
         else
         {
             m_MaxHeap = newMaxHeap;
         }
+
+        //-- Link them so we can access them from each other
+        newMinNode.m_Counterpart = newMaxNode;
+        newMaxNode.m_Counterpart = newMinNode;
     }
 
     public void DequeueMin()
     {
+        if( (null == m_MinHeap) || (null == m_MinHeap) )
+        {
+            return;
+        }
 
+        BinomialTreeNode<PriorityQueueTuple> removedNode = m_MinHeap.Pop();
+
+        //-- Remove the node from the max heap
+        m_MaxHeap.RemoveNode( removedNode.Counterpart );
     }
 
     public void DequeueMax()
     {
+        if( (null == m_MinHeap) || (null == m_MinHeap) )
+        {
+            return;
+        }
 
+        BinomialTreeNode<PriorityQueueTuple> removedNode = m_MaxHeap.Pop();
+
+        //-- Remove the node from the min heap
+        m_MinHeap.RemoveNode( removedNode.Counterpart );
+    }
+
+    public void Print()
+    {
+        Console.Out.WriteLine( "Min Heap:" );
+        m_MinHeap.Print();
+        Console.Out.WriteLine();
+
+        Console.Out.WriteLine( "Max Heap:" );
+        m_MaxHeap.Print();
+        Console.Out.WriteLine();
     }
 }
