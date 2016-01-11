@@ -59,7 +59,7 @@ where T : IComparable<T>
             Console.Write( "|-" );
             indent += "| ";
         }
-        Console.WriteLine( Value );
+        Console.WriteLine( Value + " : " + m_Counterpart );
 
         if( Children.IsEmpty )
         {

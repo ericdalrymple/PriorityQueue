@@ -252,5 +252,17 @@ class PriorityQueueTester
         pq.DequeueMin();
 
         pq.Print();
+
+        pq.DequeueMin();
+
+        pq.Print();
+
+        pq.DequeueMin();
+
+        pq.Print();
+
+        pq.DequeueMin();
+
+        pq.Print();
     }
 }

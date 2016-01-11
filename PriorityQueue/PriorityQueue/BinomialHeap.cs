@@ -163,25 +163,27 @@ where T : IComparable<T>
 
     public void RemoveNode( BinomialTreeNode<T> node )
     {
-        BinomialTreeNode<T> parentNode = null;
+        BinomialTreeNode<T> parentNode = node.Parent;
 
         //-- Bubble the node to the top of the heap
         while( null != node.Parent )
         {
-            parentNode = node.Parent;
-
             //-- Swap the value with the parent
             T tempValue = parentNode.Value;
             parentNode.m_Value = node.Value;
             node.m_Value = tempValue;
 
             //-- Swap the counterparts with the parent
+            node.m_Counterpart.m_Counterpart = parentNode;
+            parentNode.m_Counterpart.m_Counterpart = node;
+
             BinomialTreeNode<T> tempCounterpart = parentNode.Counterpart;
             parentNode.m_Counterpart = node.Counterpart;
             node.m_Counterpart = tempCounterpart;
 
             //-- Move to the parent
             node = parentNode;
+            parentNode = node.Parent;
         }
 
         //-- Find the tree the root node belongs to
@@ -197,6 +199,9 @@ where T : IComparable<T>
 
             treeIter = treeIter.Next;
         }
+
+        int i = 0;
+        ++i;
     }
 
     /// <summary>

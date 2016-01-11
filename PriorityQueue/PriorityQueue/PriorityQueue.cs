@@ -113,7 +113,16 @@ class PriorityQueue<T>
 
         //-- Add to the min heap
         BinomialHeap<PriorityQueueTuple> newMinHeap = new BinomialHeap<PriorityQueueTuple>( newMinEntry );
-        BinomialTreeNode<PriorityQueueTuple> newMinNode = newMinHeap.PeekNode();
+        
+
+        //-- Add to the max heap
+        BinomialHeap<PriorityQueueTuple> newMaxHeap = new BinomialHeap<PriorityQueueTuple>( newMaxEntry );
+
+        //-- Link the new nodes together so we can access them from each other
+        newMinHeap.TreeList.First.Value.Root.m_Counterpart = newMaxHeap.TreeList.First.Value.Root;
+        newMaxHeap.TreeList.First.Value.Root.m_Counterpart = newMinHeap.TreeList.First.Value.Root;
+        
+        //-- Integrate the new nodes into the existing heaps
         if( null != m_MinHeap )
         {
             m_MinHeap.Union( newMinHeap );
@@ -123,9 +132,6 @@ class PriorityQueue<T>
             m_MinHeap = newMinHeap;
         }
 
-        //-- Add to the max heap
-        BinomialHeap<PriorityQueueTuple> newMaxHeap = new BinomialHeap<PriorityQueueTuple>( newMaxEntry );
-        BinomialTreeNode<PriorityQueueTuple> newMaxNode = newMinHeap.PeekNode();
         if( null != m_MaxHeap )
         {
             m_MaxHeap.Union( newMaxHeap );
@@ -134,10 +140,6 @@ class PriorityQueue<T>
         {
             m_MaxHeap = newMaxHeap;
         }
-
-        //-- Link them so we can access them from each other
-        newMinNode.m_Counterpart = newMaxNode;
-        newMaxNode.m_Counterpart = newMinNode;
     }
 
     public void DequeueMin()
