@@ -1,13 +1,21 @@
 ﻿using System;
-using System.Runtime.CompilerServices;
 
 /// <summary>
 /// An implementation of a priority queue deliberately made from scratch.
-/// Implemented in the form of a Binomial Heap.
+/// Implemented in the form of two Binomial Heaps sorted in opposite orders. This
+/// was done to have DequeueMin and DequeueMax be equally efficient. The elements
+/// from both Binary Heaps match 1-to-1 and matching nodes from both heaps have
+/// a reference to each other. When an item gets dequeued from one heap, its match
+/// can be removed from the other heap efficiently because we fon't need to dig
+/// for the node.
 /// </summary>
-/// <typeparam name="T">A class.</typeparam>
+/// <typeparam name="T">The element class contained by this priority queue</typeparam>
 class PriorityQueue<T>
 {
+    /// <summary>
+    /// Sorting order for the queue tuples. This is the backbone of the
+    /// two inversely sorted internal heaps.
+    /// </summary>
     public enum SortMode
     {
           ASCENDING = 0
@@ -31,9 +39,6 @@ class PriorityQueue<T>
         /// <summary>
         /// Instantiate a new priority queue tuple.
         /// </summary>
-        /// <param name="mode"></param>
-        /// <param name="value"></param>
-        /// <param name="priority"></param>
         public PriorityQueueTuple( SortMode mode, T value, int priority )
         {
             m_Value = value;
@@ -44,8 +49,6 @@ class PriorityQueue<T>
         /// <summary>
         /// Compares one tuple against another according to its sort mode.
         /// </summary>
-        /// <param name="other"></param>
-        /// <returns></returns>
         public int CompareTo( PriorityQueueTuple other )
         {
             if( SortMode.DESCENDING == m_SortMode )
@@ -64,12 +67,29 @@ class PriorityQueue<T>
         {
             return "(" + m_Value.ToString() + ", " + m_Priority + ")";
         }
+
+        /// <summary>
+        /// Returns a display string for this tuple.
+        /// </summary>
+        /// <returns>A display string.</returns>
+        public string ToVerboseString()
+        {
+            String suffix = (SortMode.ASCENDING == m_SortMode) ? "a" : "d";
+            return "(" + m_Value.ToString() + ", " + m_Priority + ")" + suffix;
+        }
     }
 
+    private BinomialHeap<PriorityQueueTuple> m_MinHeap = null;
+    private BinomialHeap<PriorityQueueTuple> m_MaxHeap = null;
+
+    /// <summary>
+    /// The value in the queue with the highest priority.
+    /// </summary>
     public T Max
     {
         get
         {
+            //-- Skim the top of the hi-to-lo heap
             PriorityQueueTuple result = m_MaxHeap.Peek();
             if( null != result )
             {
@@ -80,10 +100,14 @@ class PriorityQueue<T>
         }
     }
 
+    /// <summary>
+    /// The value in the queue with the lowest priority.
+    /// </summary>
     public T Min
     {
         get
         {
+            //-- Skim the top of the lo-to-hi heap
             PriorityQueueTuple result = m_MinHeap.Peek();
             if( null != result )
             {
@@ -93,9 +117,6 @@ class PriorityQueue<T>
             return default( T );
         }
     }
-
-    private BinomialHeap<PriorityQueueTuple> m_MinHeap = null;
-    private BinomialHeap<PriorityQueueTuple> m_MaxHeap = null;
 
     /// <summary>
     /// Adds a value with a specified priority to the priority queue.
@@ -107,14 +128,13 @@ class PriorityQueue<T>
     /// <param name="priority">Priority of the specified value.</param>
     public void Enqueue( T value, int priority )
     {
-        //-- Create our tuples
+        //-- Create our inversely sorted tuples
         PriorityQueueTuple newMinEntry = new PriorityQueueTuple( SortMode.ASCENDING, value, priority );
         PriorityQueueTuple newMaxEntry = new PriorityQueueTuple( SortMode.DESCENDING, value, priority );
 
         //-- Add to the min heap
         BinomialHeap<PriorityQueueTuple> newMinHeap = new BinomialHeap<PriorityQueueTuple>( newMinEntry );
         
-
         //-- Add to the max heap
         BinomialHeap<PriorityQueueTuple> newMaxHeap = new BinomialHeap<PriorityQueueTuple>( newMaxEntry );
 
@@ -122,7 +142,7 @@ class PriorityQueue<T>
         newMinHeap.TreeList.First.Value.Root.m_Counterpart = newMaxHeap.TreeList.First.Value.Root;
         newMaxHeap.TreeList.First.Value.Root.m_Counterpart = newMinHeap.TreeList.First.Value.Root;
         
-        //-- Integrate the new nodes into the existing heaps
+        //-- Integrate the new size-1 heaps into the existing heaps
         if( null != m_MinHeap )
         {
             m_MinHeap.Union( newMinHeap );
@@ -142,6 +162,12 @@ class PriorityQueue<T>
         }
     }
 
+    /// <summary>
+    /// Removes the lowest priority value from this priority queue.
+    /// </summary>
+    /// <remarks>
+    /// Complexity: O(log n)
+    /// </remarks>
     public void DequeueMin()
     {
         if( (null == m_MinHeap) || (null == m_MinHeap) )
@@ -149,12 +175,24 @@ class PriorityQueue<T>
             return;
         }
 
+        //-- Remove the top node of the lo-to-hi heap
         BinomialTreeNode<PriorityQueueTuple> removedNode = m_MinHeap.Pop();
-
-        //-- Remove the node from the max heap
+        if( null == removedNode )
+        {
+            //-- Heap is empty
+            return;
+        }
+        
+        //-- Remove the matching node from the max heap
         m_MaxHeap.RemoveNode( removedNode.Counterpart );
     }
 
+    /// <summary>
+    /// Removes the highest priority value from this priority queue.
+    /// </summary>
+    /// <remarks>
+    /// Complexity: O(log n)
+    /// </remarks>
     public void DequeueMax()
     {
         if( (null == m_MinHeap) || (null == m_MinHeap) )
@@ -162,13 +200,26 @@ class PriorityQueue<T>
             return;
         }
 
+        //-- Remove the top node of the hi-to-lo heap
         BinomialTreeNode<PriorityQueueTuple> removedNode = m_MaxHeap.Pop();
+        if( null == removedNode )
+        {
+            //-- Heap is empty
+            return;
+        }
 
-        //-- Remove the node from the min heap
+        //-- Remove the matching node from the min heap
         m_MinHeap.RemoveNode( removedNode.Counterpart );
     }
 
     public void Print()
+    {
+        Console.Out.WriteLine();
+        m_MinHeap.Print();
+        Console.Out.WriteLine();
+    }
+
+    public void PrintVerbose()
     {
         Console.Out.WriteLine( "Min Heap:" );
         m_MinHeap.Print();

@@ -4,6 +4,33 @@ using System.Linq;
 
 class PriorityQueueTester
 {
+    static void Main( string[] args )
+    {
+        if( (0 < args.Length) && args[0].Equals( "debug" ) )
+        {
+            //-- Print default debug stuff; looks dirty
+            DebugTests();
+        }
+        else
+        {
+            //-- Interactively test the priority queue implementation
+            InteractiveInterface.Start( args );
+        }
+    }
+
+
+
+
+
+
+
+
+
+
+    /// <summary>
+    /// Useful comparer to ensure duplicates don't get squashed in a SortedSet.
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
     private class CustomComparer<T>
     : IComparer<T>
     where T : IComparable<T>
@@ -22,7 +49,7 @@ class PriorityQueueTester
 
     static Random rand = new Random();
 
-    static void Main( string[] args )
+    static void DebugTests()
     {
         TestCircularList();
 
@@ -249,20 +276,20 @@ class PriorityQueueTester
         
         pq.Print();
 
+        Console.Out.WriteLine( "----" );
         pq.DequeueMin();
-
         pq.Print();
 
+        Console.Out.WriteLine( "----" );
         pq.DequeueMin();
-
         pq.Print();
 
+        Console.Out.WriteLine( "----" );
         pq.DequeueMin();
-
         pq.Print();
 
+        Console.Out.WriteLine( "----" );
         pq.DequeueMin();
-
         pq.Print();
     }
 }

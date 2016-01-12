@@ -1,6 +1,18 @@
 ﻿using System;
 using System.Collections.Generic;
 
+/// <summary>
+/// A binomial heap is a structure containing 0 to many binomial trees, each
+/// of a unique order. Values are added to it by creating a size 1 binomial
+/// heap and merging it with an existing instance.
+/// 
+/// When two binomial trees are merged, their trees of the same order are merged
+/// together and the remaining trees are carried over. Because the merging of binomial
+/// trees is in constant time, merging of binomial heaps is also very efficient.
+/// 
+/// Because binomial trees follow the minimum heap rule, one can get the top value
+/// of a binomial heap by returning the lowest value among the roots of its trees.
+/// </summary>
 class BinomialHeap<T>
 where T : IComparable<T>
 {
@@ -8,14 +20,14 @@ where T : IComparable<T>
     /// Combines the trees from two binomial heaps into one list. The trees in the returned
     /// list are ordered by their binomial treee "order" and each tree has an order unique
     /// from the other trees in the list. Trees in the two heaps having the same order are
-    /// merged into a single tree whereas one-offs are simply added.
+    /// merged into a single tree whereas one-offs are simply added to the resulting list.
     /// </summary>
     /// <remarks>
     /// Complexity: O(log n)
     /// </remarks>
     /// <param name="a">First binomial heap.</param>
     /// <param name="b">Second binomial heap.</param>
-    /// <returns></returns>
+    /// <returns>A list of merged trees from both input heaps.</returns>
     private static LinkedList<BinomialTree<T>> Merge( BinomialHeap<T> a, BinomialHeap<T> b )
     {
         LinkedList<BinomialTree<T>> mergedTrees = new LinkedList<BinomialTree<T>>();
@@ -25,6 +37,7 @@ where T : IComparable<T>
 
         BinomialTree<T> pendingTree = null;
 
+        //-- Iterate through the trees of both heaps at once
         while( (null != aIter) || (null != bIter) )
         {
             if( (null == aIter) || (null == bIter) )
@@ -79,13 +92,13 @@ where T : IComparable<T>
 
         return mergedTrees;
     }
-    
+
+    private LinkedList<BinomialTree<T>> m_Trees = new LinkedList<BinomialTree<T>>();
+
     /// <summary>
     /// List of this heap's binomial trees.
     /// </summary>
     public LinkedList<BinomialTree<T>> TreeList { get { return m_Trees; } }
-    
-    private LinkedList<BinomialTree<T>> m_Trees = new LinkedList<BinomialTree<T>>();
 
     /// <summary>
     /// Private constructor used for removing elements from the heap.
@@ -112,6 +125,8 @@ where T : IComparable<T>
     /// <returns></returns>
     public T Peek()
     {
+        //-- Get the internal tree with the topmost root node value
+        //   and return that value.
         LinkedListNode<BinomialTree<T>> peekTree = PeekBase();
         if( null != peekTree )
         {
@@ -130,6 +145,8 @@ where T : IComparable<T>
     /// <returns></returns>
     public BinomialTreeNode<T> PeekNode()
     {
+        //-- Get the internal tree with the topmost root node value
+        //   and return that root node.
         LinkedListNode<BinomialTree<T>> peekTree = PeekBase();
         if( null != peekTree )
         {
@@ -155,12 +172,21 @@ where T : IComparable<T>
             return null;
         }
 
+        //-- Remove the root node from that tree and shuffle
+        //   the resulting sub-trees back in.
         RemoveRootNode( peekTree );
 
         //-- Return the value of the popped node
         return peekTree.Value.Root;
     }
 
+    /// <summary>
+    /// Remove the specified node from this heap.
+    /// </summary>
+    /// <remarks>
+    /// Complexity: O(log n)
+    /// </remarks>
+    /// <param name="node"></param>
     public void RemoveNode( BinomialTreeNode<T> node )
     {
         BinomialTreeNode<T> parentNode = node.Parent;
@@ -194,14 +220,11 @@ where T : IComparable<T>
             {
                 //-- Matching root node found; remove from heap
                 RemoveRootNode( treeIter );
-                return;
+                break;
             }
 
             treeIter = treeIter.Next;
         }
-
-        int i = 0;
-        ++i;
     }
 
     /// <summary>
@@ -228,6 +251,20 @@ where T : IComparable<T>
         }
     }
 
+    public void PrintVerbose()
+    {
+        LinkedListNode<BinomialTree<T>> tree = m_Trees.First;
+        while( null != tree )
+        {
+            tree.Value.PrintVerbose();
+            tree = tree.Next;
+        }
+    }
+
+    /// <summary>
+    /// Loops through this heap's trees and returns an iterator to the
+    /// one with the topmost root value.
+    /// </summary>
     private LinkedListNode<BinomialTree<T>> PeekBase()
     {
         LinkedListNode<BinomialTree<T>> treeIter = m_Trees.First;
@@ -260,6 +297,14 @@ where T : IComparable<T>
         return null;
     }
 
+    /// <summary>
+    /// Removes the root node from the specified internal tree and shuffles
+    /// the resulting sub-trees back into this heap.
+    /// </summary>
+    /// <remarks>
+    /// Complexity: O(log n)
+    /// </remarks>
+    /// <param name="tree">Iterater to the tree who's root we want to remove.</param>
     private void RemoveRootNode( LinkedListNode<BinomialTree<T>> tree )
     {
         //-- Remove the tree from this heap
@@ -273,6 +318,9 @@ where T : IComparable<T>
             CircularLinkedListNode<BinomialTreeNode<T>> childIter = tree.Value.Root.Children.First;
             do
             {
+                //-- Orphan the child
+                childIter.Value.m_Parent = null;
+
                 //-- Add the children of the top node as separate trees in the temp
                 //   heap from smallest to largest order.
                 temp.m_Trees.AddLast( new BinomialTree<T>( childIter.Value ) );
@@ -280,7 +328,7 @@ where T : IComparable<T>
             }
             while( tree.Value.Root.Children.First != childIter );
 
-            //-- Merge the sub-trees back into this heap
+            //-- Merge the resulting sub-trees back into this heap
             Union( temp );
         }
     }
